@@ -158,7 +158,7 @@ final class JsonRpcProtocol extends MapProtocol implements IpcConnectionDestroyE
             }
             if (id == null) {
                 LOG.trace("Request was notification, returning no result");
-                return null;
+                return Protocol.NO_RESPONSE;
             } else {
                 LOG.trace("Returning {}", result);
                 final Map<String, Object> returnValue = Maps.newHashMap();
