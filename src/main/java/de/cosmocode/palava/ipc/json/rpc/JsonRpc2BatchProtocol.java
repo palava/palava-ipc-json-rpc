@@ -28,13 +28,22 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
+import de.cosmocode.palava.core.Registry;
+import de.cosmocode.palava.core.Registry.Key;
+import de.cosmocode.palava.core.lifecycle.Disposable;
+import de.cosmocode.palava.core.lifecycle.Initializable;
+import de.cosmocode.palava.core.lifecycle.LifecycleException;
+import de.cosmocode.palava.ipc.json.Json;
 import de.cosmocode.palava.ipc.protocol.DetachedConnection;
 import de.cosmocode.palava.ipc.protocol.ListProtocol;
+import de.cosmocode.palava.ipc.protocol.Protocol;
 import de.cosmocode.palava.ipc.protocol.ProtocolException;
 
-final class JsonRpc2BatchProtocol extends ListProtocol {
+final class JsonRpc2BatchProtocol extends ListProtocol implements Initializable, Disposable {
 
     private static final Logger LOG = LoggerFactory.getLogger(JsonRpc2BatchProtocol.class);
+    
+    private final Registry registry;
 
     private final JsonRpcProtocol protocol;
     
@@ -48,8 +57,14 @@ final class JsonRpc2BatchProtocol extends ListProtocol {
     };
     
     @Inject
-    public JsonRpc2BatchProtocol(JsonRpcProtocol protocol) {
+    public JsonRpc2BatchProtocol(Registry registry, JsonRpcProtocol protocol) {
+        this.registry = Preconditions.checkNotNull(registry, "Registry");
         this.protocol = Preconditions.checkNotNull(protocol, "Protocol");
+    }
+    
+    @Override
+    public void initialize() throws LifecycleException {
+        registry.register(Key.get(Protocol.class, Json.class), this);
     }
 
     @Override
@@ -59,7 +74,7 @@ final class JsonRpc2BatchProtocol extends ListProtocol {
 
     @Override
     public Object process(List<?> request, final DetachedConnection connection) throws ProtocolException {
-        LOG.trace("Handling json-rpc batch call: {}", request);
+        LOG.trace("Processing json-rpc 2.0 batch call: {}", request);
         return Lists.newArrayList(Lists.transform(request, new Function<Object, Object>() {
             
             @Override
@@ -79,6 +94,11 @@ final class JsonRpc2BatchProtocol extends ListProtocol {
     @Override
     public Object onError(final Throwable t, List<?> request) {
         return ErrorCode.INTERNAL_ERROR.getResponse(null, t);
+    }
+    
+    @Override
+    public void dispose() throws LifecycleException {
+        registry.remove(this);
     }
 
 }

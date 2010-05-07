@@ -130,8 +130,7 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
 
     @Override
     public Object process(Map<?, ?> request, DetachedConnection connection) throws ProtocolException {
-        
-        LOG.trace("Incoming Json-RPC 2.0 call: {}", request);
+        LOG.trace("Processing json-rpc 2.0 call: {}", request);
         
         final Object id = request.get(JsonRpc.ID);
         LOG.trace("Call id: {}", id);
