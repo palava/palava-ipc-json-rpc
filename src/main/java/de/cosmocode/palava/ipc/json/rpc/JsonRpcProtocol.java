@@ -30,6 +30,10 @@ import com.google.inject.internal.Maps;
 
 import de.cosmocode.collections.Procedure;
 import de.cosmocode.palava.core.Registry;
+import de.cosmocode.palava.core.Registry.Key;
+import de.cosmocode.palava.core.lifecycle.Disposable;
+import de.cosmocode.palava.core.lifecycle.Initializable;
+import de.cosmocode.palava.core.lifecycle.LifecycleException;
 import de.cosmocode.palava.ipc.IpcArguments;
 import de.cosmocode.palava.ipc.IpcCall;
 import de.cosmocode.palava.ipc.IpcCallCreateEvent;
@@ -41,6 +45,7 @@ import de.cosmocode.palava.ipc.IpcConnection;
 import de.cosmocode.palava.ipc.IpcConnectionDestroyEvent;
 import de.cosmocode.palava.ipc.IpcSession;
 import de.cosmocode.palava.ipc.IpcSessionProvider;
+import de.cosmocode.palava.ipc.json.Json;
 import de.cosmocode.palava.ipc.protocol.DetachedConnection;
 import de.cosmocode.palava.ipc.protocol.MapProtocol;
 import de.cosmocode.palava.ipc.protocol.Protocol;
@@ -53,7 +58,7 @@ import de.cosmocode.palava.ipc.protocol.ProtocolException;
  *
  * @author Willi Schoenborn
  */
-final class JsonRpcProtocol extends MapProtocol implements IpcConnectionDestroyEvent {
+final class JsonRpcProtocol extends MapProtocol implements IpcConnectionDestroyEvent, Initializable, Disposable {
 
     private static final Logger LOG = LoggerFactory.getLogger(JsonRpcProtocol.class);
     
@@ -81,8 +86,11 @@ final class JsonRpcProtocol extends MapProtocol implements IpcConnectionDestroyE
         this.sessionProvider = Preconditions.checkNotNull(sessionProvider, "SessionProvider");
         this.commandExecutor = Preconditions.checkNotNull(commandExecutor, "CommandExecutor");
         this.scope = Preconditions.checkNotNull(scope, "Scope");
-        
-        registry.register(Protocol.class, this);
+    }
+    
+    @Override
+    public void initialize() throws LifecycleException {
+        registry.register(Key.get(Protocol.class, Json.class), this);
         registry.register(IpcConnectionDestroyEvent.class, this);
     }
     
@@ -194,6 +202,11 @@ final class JsonRpcProtocol extends MapProtocol implements IpcConnectionDestroyE
         if (identifier.equals(IDENTIFIER_VALUE)) {
             connection.getSession().clear();
         }
+    }
+    
+    @Override
+    public void dispose() throws LifecycleException {
+        registry.remove(this);
     }
     
 }
