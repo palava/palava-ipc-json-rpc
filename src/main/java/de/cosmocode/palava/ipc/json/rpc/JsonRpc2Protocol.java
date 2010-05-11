@@ -234,6 +234,7 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
             }
         } finally {
             scope.exit();
+            call.clear();
         }
     }
     
