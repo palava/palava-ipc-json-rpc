@@ -29,9 +29,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.internal.Maps;
 
-import de.cosmocode.collections.Procedure;
 import de.cosmocode.palava.core.Registry;
 import de.cosmocode.palava.core.Registry.Key;
+import de.cosmocode.palava.core.Registry.Proxy;
+import de.cosmocode.palava.core.Registry.SilentProxy;
 import de.cosmocode.palava.core.lifecycle.Disposable;
 import de.cosmocode.palava.core.lifecycle.Initializable;
 import de.cosmocode.palava.core.lifecycle.LifecycleException;
@@ -93,6 +94,10 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
     
     private final Registry registry;
     
+    private final IpcCallCreateEvent createEvent;
+    
+    private final IpcCallDestroyEvent destroyEvent;
+    
     private final IpcSessionProvider sessionProvider;
     
     private final IpcCommandExecutor commandExecutor;
@@ -100,10 +105,13 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
     private final IpcCallScope scope;
     
     @Inject
-    public JsonRpc2Protocol(Registry registry, IpcSessionProvider sessionProvider,
-        IpcCommandExecutor commandExecutor, IpcCallScope scope) {
+    public JsonRpc2Protocol(Registry registry,
+        @Proxy IpcCallCreateEvent createEvent, @SilentProxy IpcCallDestroyEvent destroyEvent,
+        IpcSessionProvider sessionProvider, IpcCommandExecutor commandExecutor, IpcCallScope scope) {
     
         this.registry = Preconditions.checkNotNull(registry, "Registry");
+        this.createEvent = Preconditions.checkNotNull(createEvent, "CreateEvent");
+        this.destroyEvent = Preconditions.checkNotNull(destroyEvent, "DestroyEvent");
         this.sessionProvider = Preconditions.checkNotNull(sessionProvider, "SessionProvider");
         this.commandExecutor = Preconditions.checkNotNull(commandExecutor, "CommandExecutor");
         this.scope = Preconditions.checkNotNull(scope, "Scope");
@@ -184,16 +192,7 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
     }
     
     private Object execute(Object id, String method, final IpcCall call) {
-        
-        registry.notify(IpcCallCreateEvent.class, new Procedure<IpcCallCreateEvent>() {
-            
-            @Override
-            public void apply(IpcCallCreateEvent input) {
-                input.eventIpcCallCreate(call);
-            }
-            
-        });
-        
+        createEvent.eventIpcCallCreate(call);
         scope.enter(call);
 
         try {
@@ -216,16 +215,7 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
             return ErrorCode.INTERNAL_ERROR.newResponse(id, e.getCause());
         } finally {
             scope.exit();
-
-            registry.notifySilent(IpcCallDestroyEvent.class, new Procedure<IpcCallDestroyEvent>() {
-                
-                @Override
-                public void apply(IpcCallDestroyEvent input) {
-                    input.eventIpcCallDestroy(call);
-                }
-                
-            });
-            
+            destroyEvent.eventIpcCallDestroy(call);
             call.clear();
         }
     }

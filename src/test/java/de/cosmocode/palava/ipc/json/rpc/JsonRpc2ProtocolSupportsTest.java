@@ -19,17 +19,13 @@ package de.cosmocode.palava.ipc.json.rpc;
 import java.util.Collections;
 import java.util.Map;
 
-import org.easymock.EasyMock;
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 
 import de.cosmocode.junit.UnitProvider;
-import de.cosmocode.palava.core.Registry;
-import de.cosmocode.palava.ipc.IpcCallScope;
-import de.cosmocode.palava.ipc.IpcCommandExecutor;
-import de.cosmocode.palava.ipc.IpcSessionProvider;
+import de.cosmocode.palava.core.Palava;
 import de.cosmocode.palava.ipc.protocol.MapProtocol;
 
 /**
@@ -41,12 +37,7 @@ public final class JsonRpc2ProtocolSupportsTest implements UnitProvider<MapProto
 
     @Override
     public MapProtocol unit() {
-        final Registry registry = EasyMock.createMock("registry", Registry.class);
-        final IpcSessionProvider provider = EasyMock.createMock("provider", IpcSessionProvider.class);
-        final IpcCommandExecutor executor = EasyMock.createMock("executor", IpcCommandExecutor.class);
-        final IpcCallScope scope = EasyMock.createMock("scope", IpcCallScope.class);
-        // no replay, 'cause we want to allow any method call on the mocks
-        return new JsonRpc2Protocol(registry, provider, executor, scope);
+        return Palava.newFramework().getInstance(JsonRpc2Protocol.class);
     }
     
     /**
