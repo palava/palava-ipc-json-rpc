@@ -25,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.internal.Maps;
@@ -136,13 +135,13 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
         LOG.trace("Call id: {}", id);
         
         if (id != null && !VALID_ID_TYPES.contains(id.getClass())) {
-            return ErrorCode.INVALID_REQUEST.getResponse(id, "id must be on of [string, number, boolean]");
+            return ErrorCode.INVALID_REQUEST.newResponse(id, "id must be on of [string, number, boolean]");
         }
         
         final Object untypedJsonRpc = request.get(JsonRpc.JSON_RPC);
         
         if (!VERSION.equals(untypedJsonRpc)) {
-            return ErrorCode.INVALID_REQUEST.getResponse(id, "jsonrpc must be 2.0");
+            return ErrorCode.INVALID_REQUEST.newResponse(id, "jsonrpc must be 2.0");
         }
         
         final Object untypedMethod = request.get(JsonRpc.METHOD);
@@ -152,7 +151,7 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
             method = String.class.cast(untypedMethod);
             LOG.trace("Requested method: {}", method);
         } else {
-            return ErrorCode.INVALID_REQUEST.getResponse(id, "method must be a string");
+            return ErrorCode.INVALID_REQUEST.newResponse(id, "method must be a string");
         }
         
         final Object untypedParams = request.get(JsonRpc.PARAMS);
@@ -173,13 +172,18 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
             LOG.trace("Incoming named params: {}", untypedParams);
             arguments = new MapIpcArguments(params);
         } else {
-            return ErrorCode.INVALID_PARAMS.getResponse(id, "params must be either an array or an object");
+            return ErrorCode.INVALID_PARAMS.newResponse(id, "params must be either an array or an object");
         }
         
-        final IpcSession session = sessionProvider.getSession(null, null);
+        final IpcSession session = sessionProvider.getSession(connection.getConnectionId(), null);
         connection.attachTo(session);
         connection.set(IDENTIFIER, IDENTIFIER_VALUE);
         final IpcCall call = new JsonRpcCall(arguments, connection);
+        
+        return execute(id, method, call);
+    }
+    
+    private Object execute(Object id, String method, final IpcCall call) {
         
         registry.notify(IpcCallCreateEvent.class, new Procedure<IpcCallCreateEvent>() {
             
@@ -190,57 +194,61 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
             
         });
         
-        return execute(id, method, call);
-    }
-    
-    private Object execute(Object id, String method, final IpcCall call) {
-        
         scope.enter(call);
 
         try {
-            final Map<String, Object> result;
-            
-            try {
-                result = commandExecutor.execute(method, call);
-            /*CHECKSTYLE:OFF*/
-            } catch (RuntimeException e) {
-            /*CHECKSTYLE:ON*/
-                return ErrorCode.INTERNAL_ERROR.getResponse(id, e);
-            } catch (IpcCommandNotAvailableException e) {
-                return ErrorCode.METHOD_NOT_FOUND.getResponse(id, e.getCause());
-            } catch (IpcCommandExecutionException e) {
-                return ErrorCode.INTERNAL_ERROR.getResponse(id, e.getCause());
-            } finally {
-                registry.notifySilent(IpcCallDestroyEvent.class, new Procedure<IpcCallDestroyEvent>() {
-                    
-                    @Override
-                    public void apply(IpcCallDestroyEvent input) {
-                        input.eventIpcCallDestroy(call);
-                    }
-                    
-                });
-            }
-            
+            final Map<String, Object> result = commandExecutor.execute(method, call);
+                
             if (id == null) {
                 LOG.trace("Request was notification, returning no result");
                 return Protocol.NO_RESPONSE;
             } else {
                 LOG.trace("Returning {}", result);
-                final Map<String, Object> returnValue = Maps.newHashMap();
-                returnValue.put(JsonRpc.JSON_RPC, VERSION);
-                returnValue.put(JsonRpc.RESULT, result);
-                returnValue.put(JsonRpc.ID, id);
-                return returnValue;
+                return newResult(result, id);
             }
+        /*CHECKSTYLE:OFF*/
+        } catch (RuntimeException e) {
+        /*CHECKSTYLE:ON*/
+            return ErrorCode.INTERNAL_ERROR.newResponse(id, e);
+        } catch (IpcCommandNotAvailableException e) {
+            return ErrorCode.METHOD_NOT_FOUND.newResponse(id, e.getCause());
+        } catch (IpcCommandExecutionException e) {
+            return ErrorCode.INTERNAL_ERROR.newResponse(id, e.getCause());
         } finally {
             scope.exit();
+
+            registry.notifySilent(IpcCallDestroyEvent.class, new Procedure<IpcCallDestroyEvent>() {
+                
+                @Override
+                public void apply(IpcCallDestroyEvent input) {
+                    input.eventIpcCallDestroy(call);
+                }
+                
+            });
+            
             call.clear();
         }
     }
     
+    private Map<String, Object> newResult(Object result, Object id) {
+        return newHashMap(
+            JsonRpc.JSON_RPC, VERSION,
+            JsonRpc.RESULT, result,
+            JsonRpc.ID, id
+        );
+    }
+    
+    private Map<String, Object> newHashMap(String k1, Object v1, String k2, Object v2, String k3, Object v3) {
+        final Map<String, Object> returnValue = Maps.newHashMap();
+        returnValue.put(k1, v1);
+        returnValue.put(k2, v2);
+        returnValue.put(k3, v3);
+        return returnValue;
+    }
+    
     @Override
     public Object onError(Throwable t, Map<?, ?> request) {
-        return ErrorCode.INTERNAL_ERROR.getResponse(request.get(JsonRpc.ID), Throwables.getRootCause(t));
+        return ErrorCode.INTERNAL_ERROR.newResponse(request.get(JsonRpc.ID), t);
     }
     
     @Override

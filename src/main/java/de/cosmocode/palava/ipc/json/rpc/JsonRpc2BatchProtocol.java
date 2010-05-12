@@ -39,13 +39,19 @@ import de.cosmocode.palava.ipc.protocol.ListProtocol;
 import de.cosmocode.palava.ipc.protocol.Protocol;
 import de.cosmocode.palava.ipc.protocol.ProtocolException;
 
+/**
+ * Batch-style implementation of the Json-Rpc 2.0 specification.
+ *
+ * @since 1.0
+ * @author Willi Schoenborn
+ */
 final class JsonRpc2BatchProtocol extends ListProtocol implements Initializable, Disposable {
 
     private static final Logger LOG = LoggerFactory.getLogger(JsonRpc2BatchProtocol.class);
     
     private final Registry registry;
 
-    private final JsonRpcProtocol protocol;
+    private final JsonRpc2Protocol protocol;
     
     private final Predicate<Object> supports = new Predicate<Object>() {
         
@@ -57,7 +63,7 @@ final class JsonRpc2BatchProtocol extends ListProtocol implements Initializable,
     };
     
     @Inject
-    public JsonRpc2BatchProtocol(Registry registry, JsonRpcProtocol protocol) {
+    public JsonRpc2BatchProtocol(Registry registry, JsonRpc2Protocol protocol) {
         this.registry = Preconditions.checkNotNull(registry, "Registry");
         this.protocol = Preconditions.checkNotNull(protocol, "Protocol");
     }
@@ -81,7 +87,9 @@ final class JsonRpc2BatchProtocol extends ListProtocol implements Initializable,
             public Object apply(Object from) {
                 try {
                     return protocol.process(from, connection);
+                /* CHECKSTYLE:OFF */
                 } catch (RuntimeException e) {
+                /* CHECKSTYLE:ON */
                     return protocol.onError(e, from);
                 } catch (ProtocolException e) {
                     return protocol.onError(e, from);
@@ -93,7 +101,7 @@ final class JsonRpc2BatchProtocol extends ListProtocol implements Initializable,
 
     @Override
     public Object onError(final Throwable t, List<?> request) {
-        return ErrorCode.INTERNAL_ERROR.getResponse(null, t);
+        return ErrorCode.INTERNAL_ERROR.newResponse(null, t);
     }
     
     @Override

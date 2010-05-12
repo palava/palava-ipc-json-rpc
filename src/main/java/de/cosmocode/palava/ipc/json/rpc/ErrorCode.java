@@ -68,16 +68,15 @@ public enum ErrorCode {
      * @return a new response map
      * @throws NullPointerException if e is null
      */
-    public Map<String, Object> getResponse(Object id, Throwable e) {
+    public Map<String, Object> newResponse(Object id, Throwable e) {
         Preconditions.checkNotNull(e, "Exception");
-        final Map<String, Object> response = Maps.newHashMap();
         
         final Map<String, Object> error = Maps.newHashMap();
-        
         error.put(JsonRpc.CODE, code);
         error.put(JsonRpc.MESSAGE, e.getMessage());
         error.put(JsonRpc.DATA, e);
         
+        final Map<String, Object> response = Maps.newHashMap();
         response.put(JsonRpc.ERROR, error);
         response.put(JsonRpc.ID, id);
         
@@ -93,15 +92,14 @@ public enum ErrorCode {
      * @return a new response map
      * @throws NullPointerException if message is null
      */
-    public Map<String, Object> getResponse(Object id, String message) {
+    public Map<String, Object> newResponse(Object id, String message) {
         Preconditions.checkNotNull(message, "Message");
-        final Map<String, Object> response = Maps.newHashMap();
         
         final Map<String, Object> error = Maps.newHashMap();
-        
         error.put(JsonRpc.CODE, code);
         error.put(JsonRpc.MESSAGE, message);
         
+        final Map<String, Object> response = Maps.newHashMap();
         response.put(JsonRpc.ERROR, error);
         response.put(JsonRpc.ID, id);
         

@@ -16,28 +16,38 @@
 
 package de.cosmocode.palava.ipc.json.rpc;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import com.google.inject.BindingAnnotation;
+
 /**
- * Static constants used by the Json-RPC protocol.
+ * Binding annotation and static constant holder class used by the Json-Rpc protocol.
  *
+ * @since 1.0
  * @author Willi Schoenborn
  */
-final class JsonRpc {
+@Retention(RetentionPolicy.RUNTIME)
+@Target({
+    ElementType.METHOD,
+    ElementType.PARAMETER
+})
+@BindingAnnotation
+@interface JsonRpc {
 
-    public static final String JSON_RPC = "jsonrpc";
+    String JSON_RPC = "jsonrpc";
     
-    public static final String METHOD = "method";
-    public static final String PARAMS = "params";
-    public static final String ID = "id";
+    String METHOD = "method";
+    String PARAMS = "params";
+    String ID = "id";
     
-    public static final String RESULT = "result";
+    String RESULT = "result";
     
-    public static final String ERROR = "error";
-    public static final String CODE = "code";
-    public static final String MESSAGE = "message";
-    public static final String DATA = "data";
-
-    private JsonRpc() {
-        
-    }
+    String ERROR = "error";
+    String CODE = "code";
+    String MESSAGE = "message";
+    String DATA = "data";
 
 }

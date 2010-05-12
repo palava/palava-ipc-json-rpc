@@ -127,8 +127,8 @@ final class JsonRpcProtocol extends MapProtocol implements IpcConnectionDestroyE
         LOG.trace("Call id: {}", id);
         
         final IpcArguments arguments = new JsonRpcArguments(params);
-        
-        final IpcSession session = sessionProvider.getSession(null, null);
+
+        final IpcSession session = sessionProvider.getSession(connection.getConnectionId(), null);
         connection.attachTo(session);
         connection.set(IDENTIFIER, IDENTIFIER_VALUE);
         final IpcCall call = new JsonRpcCall(arguments, connection);
@@ -145,54 +145,63 @@ final class JsonRpcProtocol extends MapProtocol implements IpcConnectionDestroyE
         scope.enter(call);
         
         try {
-            final Map<String, Object> result;
-            
-            try {
-                result = commandExecutor.execute(method, call);
-            /*CHECKSTYLE:OFF*/
-            } catch (RuntimeException e) {
-            /*CHECKSTYLE:ON*/
-                throw new IpcCommandExecutionException(e);
-            } finally {
-                registry.notifySilent(IpcCallDestroyEvent.class, new Procedure<IpcCallDestroyEvent>() {
-                    
-                    @Override
-                    public void apply(IpcCallDestroyEvent input) {
-                        input.eventIpcCallDestroy(call);
-                    }
-                    
-                });
-            }
+            final Map<String, Object> result = commandExecutor.execute(method, call);
             if (id == null) {
                 LOG.trace("Request was notification, returning no result");
                 return Protocol.NO_RESPONSE;
             } else {
                 LOG.trace("Returning {}", result);
-                final Map<String, Object> returnValue = Maps.newHashMap();
-                returnValue.put(JsonRpc.RESULT, result);
-                returnValue.put(JsonRpc.ERROR, null);
-                returnValue.put(JsonRpc.ID, id);
-                return returnValue;
+                return newResult(result, id);
             }
+        /*CHECKSTYLE:OFF*/
+        } catch (RuntimeException e) {
+        /*CHECKSTYLE:ON*/
+            return newError(e, id);
         } catch (IpcCommandExecutionException e) {
-            final Map<String, Object> returnValue = Maps.newHashMap();
-            returnValue.put(JsonRpc.RESULT, null);
-            returnValue.put(JsonRpc.ERROR, e);
-            returnValue.put(JsonRpc.ID, id);
-            return returnValue;
+            return newError(e, id);
         } finally {
             scope.exit();
+
+            registry.notifySilent(IpcCallDestroyEvent.class, new Procedure<IpcCallDestroyEvent>() {
+                
+                @Override
+                public void apply(IpcCallDestroyEvent input) {
+                    input.eventIpcCallDestroy(call);
+                }
+                
+            });
+            
             call.clear();
         }
     }
     
+    private Map<String, Object> newResult(Object result, Object id) {
+        return newHashMap(
+            JsonRpc.RESULT, result,
+            JsonRpc.ERROR, null,
+            JsonRpc.ID, id
+        );
+    }
+    
+    private Map<String, Object> newError(Throwable t, Object id) {
+        return newHashMap(
+            JsonRpc.RESULT, null,
+            JsonRpc.ERROR, t,
+            JsonRpc.ID, id
+        );
+    }
+    
+    private Map<String, Object> newHashMap(String k1, Object v1, String k2, Object v2, String k3, Object v3) {
+        final Map<String, Object> returnValue = Maps.newHashMap();
+        returnValue.put(k1, v1);
+        returnValue.put(k2, v2);
+        returnValue.put(k3, v3);
+        return returnValue;
+    }
+    
     @Override
     public Object onError(Throwable t, Map<?, ?> request) {
-        final Map<String, Object> returnValue = Maps.newHashMap();
-        returnValue.put(JsonRpc.RESULT, null);
-        returnValue.put(JsonRpc.ERROR, t);
-        returnValue.put(JsonRpc.ID, request.get(JsonRpc.ID));
-        return returnValue;
+        return newError(t, request.get(JsonRpc.ID));
     }
     
     @Override
