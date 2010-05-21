@@ -205,17 +205,13 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
                 LOG.trace("Returning {}", result);
                 return newResult(result, id);
             }
-        /*CHECKSTYLE:OFF*/
-        } catch (RuntimeException e) {
-        /*CHECKSTYLE:ON*/
-            return ErrorCode.INTERNAL_ERROR.newResponse(id, e);
         } catch (IpcCommandNotAvailableException e) {
             return ErrorCode.METHOD_NOT_FOUND.newResponse(id, e.getCause());
         } catch (IpcCommandExecutionException e) {
             return ErrorCode.INTERNAL_ERROR.newResponse(id, e.getCause());
         } finally {
-            scope.exit();
             destroyEvent.eventIpcCallDestroy(call);
+            scope.exit();
         }
     }
     

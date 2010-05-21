@@ -81,6 +81,7 @@ final class JsonRpc2BatchProtocol extends ListProtocol implements Initializable,
     @Override
     public Object process(List<?> request, final DetachedConnection connection) throws ProtocolException {
         LOG.trace("Processing json-rpc 2.0 batch call: {}", request);
+        // FIXME should be one call scope instead of multiple
         return Lists.newArrayList(Lists.transform(request, new Function<Object, Object>() {
             
             @Override

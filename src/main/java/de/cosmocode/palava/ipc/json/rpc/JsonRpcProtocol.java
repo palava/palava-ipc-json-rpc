@@ -153,15 +153,11 @@ final class JsonRpcProtocol extends MapProtocol implements IpcConnectionDestroyE
                 LOG.trace("Returning {}", result);
                 return newResult(result, id);
             }
-        /*CHECKSTYLE:OFF*/
-        } catch (RuntimeException e) {
-        /*CHECKSTYLE:ON*/
-            return newError(e, id);
         } catch (IpcCommandExecutionException e) {
             return newError(e, id);
         } finally {
-            scope.exit();
             destroyEvent.eventIpcCallDestroy(call);
+            scope.exit();
         }
     }
     
