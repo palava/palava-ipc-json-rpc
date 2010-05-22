@@ -136,6 +136,7 @@ final class JsonRpcProtocol extends MapProtocol implements IpcConnectionDestroyE
         
         final IpcArguments arguments = new JsonRpcArguments(params);
 
+        // FIXME either use the session or provide a dummy version
         final IpcSession session = sessionProvider.getSession(connection.getConnectionId(), null);
         connection.attachTo(session);
         connection.set(IDENTIFIER, IDENTIFIER_VALUE);

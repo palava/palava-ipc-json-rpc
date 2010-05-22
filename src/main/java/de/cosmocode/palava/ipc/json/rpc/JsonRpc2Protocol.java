@@ -170,8 +170,7 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
             LOG.trace("No params, using empty map");
             arguments = new MapIpcArguments(Maps.<String, Object>newHashMap());
         } else if (untypedParams instanceof List<?>) {
-            @SuppressWarnings("unchecked")
-            final List<Object> params = List.class.cast(untypedParams);
+            final List<?> params = List.class.cast(untypedParams);
             LOG.trace("Incoming positional params: {}", untypedParams);
             arguments = new JsonRpcArguments(params);
         } else if (untypedParams instanceof Map<?, ?>) {
@@ -241,6 +240,7 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
     public void eventIpcConnectionDestroy(IpcConnection connection) {
         final String identifier = connection.get(IDENTIFIER);
         if (identifier == null) return;
+        // is the given connection one of ours?
         if (identifier.equals(IDENTIFIER_VALUE)) {
             connection.getSession().clear();
         }
