@@ -7,7 +7,7 @@
 	</parent>
 	<groupId>de.cosmocode.palava</groupId>
 	<artifactId>palava-ipc-json-rpc</artifactId>
-	<name>Palava IPC Json-Rpc</name>
+	<name>Palava IPC JSON RPC</name>
 	<version>1.0-SNAPSHOT</version>
 	<scm>
 		<developerConnection>scm:svn:https://palava.svn.cosmocode.de/palava-ipc-json-rpc/trunk</developerConnection>
