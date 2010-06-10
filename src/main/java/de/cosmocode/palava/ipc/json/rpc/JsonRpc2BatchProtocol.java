@@ -101,7 +101,7 @@ final class JsonRpc2BatchProtocol extends ListProtocol implements Initializable,
     }
 
     @Override
-    public Object onError(final Throwable t, List<?> request) {
+    public Object onError(Throwable t, List<?> request) {
         return ErrorCode.INTERNAL_ERROR.newResponse(null, t);
     }
     
