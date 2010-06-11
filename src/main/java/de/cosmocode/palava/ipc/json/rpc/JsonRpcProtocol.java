@@ -136,10 +136,12 @@ final class JsonRpcProtocol extends MapProtocol implements IpcConnectionDestroyE
         
         final IpcArguments arguments = new JsonRpcArguments(params);
 
-        // FIXME either use the session or provide a dummy version
-        final IpcSession session = sessionProvider.getSession(connection.getConnectionId(), null);
-        connection.attachTo(session);
-        connection.set(IDENTIFIER, IDENTIFIER_VALUE);
+        if (!connection.isAttached()) {
+            final IpcSession session = sessionProvider.getSession(connection.getConnectionId(), null);
+            connection.attachTo(session);
+            connection.set(IDENTIFIER, IDENTIFIER_VALUE);
+        }
+        
         final IpcCall call = new JsonRpcCall(arguments, connection);
         
         createEvent.eventIpcCallCreate(call);
@@ -195,6 +197,7 @@ final class JsonRpcProtocol extends MapProtocol implements IpcConnectionDestroyE
     public void eventIpcConnectionDestroy(IpcConnection connection) {
         final String identifier = connection.get(IDENTIFIER);
         if (identifier == null) return;
+        // is the given connection one of ours?
         if (identifier.equals(IDENTIFIER_VALUE)) {
             connection.getSession().clear();
         }

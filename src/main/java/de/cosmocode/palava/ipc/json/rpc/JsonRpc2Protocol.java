@@ -182,10 +182,12 @@ final class JsonRpc2Protocol extends MapProtocol implements IpcConnectionDestroy
             return ErrorCode.INVALID_PARAMS.newResponse(id, "params must be either an array or an object");
         }
         
-        // FIXME either use the session or provide a dummy version
-        final IpcSession session = sessionProvider.getSession(connection.getConnectionId(), null);
-        connection.attachTo(session);
-        connection.set(IDENTIFIER, IDENTIFIER_VALUE);
+        if (!connection.isAttached()) {
+            final IpcSession session = sessionProvider.getSession(connection.getConnectionId(), null);
+            connection.attachTo(session);
+            connection.set(IDENTIFIER, IDENTIFIER_VALUE);
+        }
+        
         final IpcCall call = new JsonRpcCall(arguments, connection);
         
         return execute(id, method, call);
