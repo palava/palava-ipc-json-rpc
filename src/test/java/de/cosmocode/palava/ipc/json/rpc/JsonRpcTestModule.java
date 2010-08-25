@@ -26,7 +26,7 @@ import de.cosmocode.palava.core.inject.TypeConverterModule;
 import de.cosmocode.palava.core.lifecycle.LifecycleModule;
 import de.cosmocode.palava.ipc.DefaultIpcCallFilterChainFactoryModule;
 import de.cosmocode.palava.ipc.IpcEventModule;
-import de.cosmocode.palava.ipc.IpcModule;
+import de.cosmocode.palava.ipc.IpcScopeModule;
 import de.cosmocode.palava.ipc.execvm.LocalExecutorModule;
 import de.cosmocode.palava.ipc.session.store.IpcSessionStore;
 import de.cosmocode.palava.ipc.session.store.StoreIpcSessionModule;
@@ -50,7 +50,7 @@ public final class JsonRpcTestModule implements Module {
         binder.install(new BackgroundSchedulerModule());
         binder.install(new DefaultThreadProviderModule());
         binder.install(new FakeMBeanServerModule());
-        binder.install(new IpcModule());
+        binder.install(new IpcScopeModule());
         binder.install(new IpcEventModule());
         binder.install(new LocalExecutorModule());
         binder.install(new DefaultIpcCallFilterChainFactoryModule());
